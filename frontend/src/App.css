@@ -207,6 +207,12 @@ textarea:focus {
   margin-bottom: 20px;
 }
 
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
 .table-heading h3 {
   margin: 4px 0 0;
 }
@@ -296,6 +302,13 @@ textarea:focus {
 .capacity span {
   margin-left: auto;
   font-size: 12px;
+}
+
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 .status {

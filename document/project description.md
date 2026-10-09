@@ -56,6 +56,12 @@ Permissions:
 | Register attendees | No | No | Yes |
 | Cancel registrations | No | No | Yes |
 
+### Account provisioning workflow
+
+There is no public signup. The database seed creates only the initial Admin account. After logging in, the Admin opens the **Users & permissions** page and uses **Create Manager / Staff** to create the operational accounts. The form requires a name, email, password, and role, and supports the `MANAGER` and `STAFF` roles.
+
+The newly created users can then sign in with their own credentials. The Admin page refreshes its account list after a successful creation. This is also enforced by the backend: only an authenticated Admin can call `POST /api/users`; hiding the control in the frontend is not relied on for security.
+
 ### Workshop model
 
 The Workshop model tracks:
@@ -114,6 +120,7 @@ The workshop `status` field is useful for display and filtering, but it is not t
 ## Assumptions
 
 - There is no public signup. The initial Admin is seeded and creates all other accounts.
+- The seeded Admin is the only initial application user; reviewers create Manager and Staff accounts through the Admin user-management page.
 - Attendees do not have user accounts; staff enter their name and email.
 - An attendee email can have only one active registration for a workshop.
 - A cancelled attendee can be registered again later because the old record is preserved and a new active registration may be created.

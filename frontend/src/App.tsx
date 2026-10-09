@@ -204,6 +204,8 @@ function Dashboard({
   const [showWorkshopForm, setShowWorkshopForm] = useState(false)
   const [editingWorkshop, setEditingWorkshop] = useState<Workshop | null>(null)
   const [showUserForm, setShowUserForm] = useState(false)
+  const [usersRefreshKey, setUsersRefreshKey] = useState(0)
+  const [registrationRequested, setRegistrationRequested] = useState(false)
   const [page, setPage] = useState<Page>('workshops')
 
   async function loadWorkshops() {
@@ -228,7 +230,8 @@ function Dashboard({
     }
   }
 
-  async function loadRegistrations(workshop: Workshop) {
+  async function loadRegistrations(workshop: Workshop, openRegistration = false) {
+    setRegistrationRequested(openRegistration)
     setSelectedWorkshop(workshop)
     try {
       const data = await request<Registration[]>(
@@ -280,7 +283,7 @@ function Dashboard({
         </div>
         <div className="actions">
           {user.role === 'ADMIN' && page === 'users' && (
-            <button className="button secondary" onClick={() => setShowUserForm(true)}>Create user</button>
+            <button className="button primary" onClick={() => setShowUserForm(true)}>Create Manager / Staff</button>
           )}
           {user.role === 'MANAGER' && page === 'workshops' && (
             <button className="button primary" onClick={() => {
@@ -292,7 +295,12 @@ function Dashboard({
       </section>
 
       {page === 'users' && user.role === 'ADMIN' ? (
-        <UserManagement token={token} onError={onError} />
+        <UserManagement
+          token={token}
+          refreshKey={usersRefreshKey}
+          onCreateUser={() => setShowUserForm(true)}
+          onError={onError}
+        />
       ) : (
       <>
       <section className="filters card">
@@ -336,9 +344,18 @@ function Dashboard({
                 <strong>{workshop.seatsAvailable}</strong> seats available of {workshop.capacity}
                 <span>{workshop.activeRegistrations} registered</span>
               </div>
-              <button className="button secondary" onClick={() => void loadRegistrations(workshop)}>
-                {page === 'registrations' ? 'View history' : 'View registrations'}
-              </button>
+              <div className="card-actions">
+                <button className="button secondary" onClick={() => void loadRegistrations(workshop)}>
+                  {page === 'registrations' ? 'View history' : 'View registrations'}
+                </button>
+                {user.role === 'STAFF' && workshop.status === 'OPEN' && workshop.seatsAvailable > 0 && (
+                  <button className="button primary" onClick={() => {
+                    void loadRegistrations(workshop, true)
+                  }}>
+                    Register attendee
+                  </button>
+                )}
+              </div>
               {user.role === 'MANAGER' && (
                 <button className="text-button edit-button" onClick={() => {
                   setEditingWorkshop(workshop)
@@ -366,8 +383,10 @@ function Dashboard({
                 </div>
                 {user.role === 'STAFF' && selectedWorkshop.seatsAvailable > 0 && selectedWorkshop.status === 'OPEN' && (
                   <RegistrationForm
+                    key={`${selectedWorkshop.id}-${registrationRequested}`}
                     token={token}
                     workshopId={selectedWorkshop.id}
+                    initialOpen={registrationRequested}
                     onDone={async () => {
                       onNotice('Attendee registered successfully.')
                       await loadRegistrations(selectedWorkshop)
@@ -434,6 +453,7 @@ function Dashboard({
           onClose={() => setShowUserForm(false)}
           onDone={() => {
             setShowUserForm(false)
+            setUsersRefreshKey((current) => current + 1)
             onNotice('User created successfully.')
           }}
           onError={onError}
@@ -445,9 +465,13 @@ function Dashboard({
 
 function UserManagement({
   token,
+  refreshKey,
+  onCreateUser,
   onError,
 }: {
   token: string
+  refreshKey: number
+  onCreateUser: () => void
   onError: (message: string) => void
 }) {
   const [users, setUsers] = useState<User[]>([])
@@ -460,7 +484,7 @@ function UserManagement({
         onError(loadError instanceof Error ? loadError.message : 'Could not load users')
       })
       .finally(() => setLoading(false))
-  }, [token, onError])
+  }, [token, refreshKey, onError])
 
   if (loading) return <p className="muted">Loading users...</p>
 
@@ -470,8 +494,12 @@ function UserManagement({
         <div>
           <p className="eyebrow">Admin only</p>
           <h3>Accounts and roles</h3>
+          <p className="muted">Create the Manager and Staff accounts required by the centre.</p>
         </div>
-        <span className="muted">{users.length} account{users.length === 1 ? '' : 's'}</span>
+        <div className="table-actions">
+          <span className="muted">{users.length} account{users.length === 1 ? '' : 's'}</span>
+          <button className="button primary" onClick={onCreateUser}>Create account</button>
+        </div>
       </div>
       <div className="user-table">
         <div className="user-row user-header">
@@ -497,15 +525,17 @@ function UserManagement({
 function RegistrationForm({
   token,
   workshopId,
+  initialOpen = false,
   onDone,
   onError,
 }: {
   token: string
   workshopId: number
+  initialOpen?: boolean
   onDone: () => Promise<void>
   onError: (message: string) => void
 }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(initialOpen)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
 

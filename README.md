@@ -110,6 +110,19 @@ Email: admin@workshops.local
 Password: Admin@12345
 ```
 
+### First-time account setup
+
+There is intentionally no public signup page. The first-time workflow is:
+
+1. Sign in with the seeded Admin credentials.
+2. Open **Users & permissions**.
+3. Click **Create Manager / Staff** or **Create account**.
+4. Enter the person's name, email, password, and role.
+5. Create one Manager account and one Staff account.
+6. Sign out and sign in with the new role-specific account.
+
+The Admin user-management page lists all accounts and their roles. The API also enforces this rule, so Manager and Staff users cannot create accounts by calling `POST /api/users` directly.
+
 The sample workshop dates are calculated relative to the day the seed runs, so date-based demonstrations remain useful.
 
 To inspect the database:
@@ -188,7 +201,9 @@ Both the backend and frontend must be running.
 
 - Sign in
 - Open **Users & permissions**
-- Create Manager and Staff accounts
+- Click **Create Manager / Staff**
+- Create Manager and Staff accounts by choosing the role in the form
+- Review all created accounts and their roles
 - View workshops and registration history
 
 ### Manager
